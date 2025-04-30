@@ -49,9 +49,9 @@ USER REQUEST:
         filters = json.loads(content)
 
         # Log filters to console
-        print("----- GPT FILTERS -----")
-        print(json.dumps(filters, indent=2))
-        print(f"----- CSV TOTAL ROWS: {len(df)} -----")
+        print("----- GPT FILTERS -----", flush=True)
+        print(json.dumps(filters, indent=2), flush=True)
+        print(f"Returning {len(results)} results after filtering.", flush=True)
 
         # Start filtering
         results = df.copy()
