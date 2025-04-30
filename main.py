@@ -80,7 +80,9 @@ USER REQUEST:
 
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
-        sanitised = results.where(pd.notnull(results), None)
+        # Fully replace all NaN and NaT with None for safe JSON serialization
+        sanitised = results.replace({pd.NA: None, pd.NaT: None, float("nan"): None})
+
         return jsonify({"results": sanitised.to_dict(orient="records")})
 
     except Exception as e:
