@@ -45,6 +45,11 @@ USER REQUEST:
 
         content = response["choices"][0]["message"]["content"]
         filters = json.loads(content)
+        
+        print("----- GPT FILTERS -----")
+print(json.dumps(filters, indent=2))
+print("----- CSV TOTAL ROWS -----")
+print(f"{len(df)} total rows before filtering")
 
         # Start filtering
         results = df.copy()
@@ -67,7 +72,7 @@ USER REQUEST:
             # Fallback: if tag filter returns nothing, drop it
             if not tag_filtered.empty:
                 results = tag_filtered
-
+print(f"Returning {len(results)} results after filtering.")
         # Return results
         return jsonify({"results": results.to_dict(orient="records")})
 
