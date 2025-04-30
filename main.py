@@ -81,7 +81,7 @@ USER REQUEST:
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
         sanitised = results.where(pd.notnull(results), None)
-        return jsonify({"results": results.to_dict(orient="records")})
+        return jsonify({"results": sanitised.to_dict(orient="records")})
 
     except Exception as e:
         print("❌ ERROR during query:", flush=True)
