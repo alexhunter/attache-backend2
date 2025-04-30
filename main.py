@@ -78,9 +78,12 @@ USER REQUEST:
 
         return jsonify({"results": results.to_dict(orient="records")})
 
-    except Exception as e:
-        print(f"ERROR: {str(e)}")
-        return jsonify({"error": str(e)}), 500
+        import traceback
+
+        except Exception as e:
+            print("ERROR during query:")
+            traceback.print_exc()
+            return jsonify({"error": str(e)}), 500
 
 # Run only if executed directly
 if __name__ == "__main__":
