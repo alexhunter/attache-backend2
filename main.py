@@ -79,6 +79,8 @@ USER REQUEST:
             results = df[df["City"].str.contains(filters["city"], case=False, na=False)]
 
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
+
+        sanitised = results.where(pd.notnull(results), None)
         return jsonify({"results": results.to_dict(orient="records")})
 
     except Exception as e:
