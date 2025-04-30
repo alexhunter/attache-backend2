@@ -40,7 +40,7 @@ USER REQUEST:
     try:
         # Call OpenAI (v1.x syntax)
         response = client.chat.completions.create(
-            model="gpt-4",
+            model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": gpt_prompt}],
             temperature=0.3
         )
