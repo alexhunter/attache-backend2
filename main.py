@@ -1,23 +1,24 @@
 from flask import Flask, request, jsonify
 import pandas as pd
 import openai
+import os
 import json
 
-# Config
-openai.api_key = "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"
-CSV_PATH = "attache_cleaned_places.csv"
-
-# Load data
-df = pd.read_csv(CSV_PATH)
-
-# App setup
+# Set up the app
 app = Flask(__name__)
+
+# Securely pull API key from environment
+openai.api_key = os.getenv("OPENAI_API_KEY")
+
+# Load your dataset once at startup
+CSV_PATH = "attache_cleaned_places.csv"
+df = pd.read_csv(CSV_PATH)
 
 @app.route("/query", methods=["POST"])
 def query():
     user_input = request.json.get("prompt", "")
 
-    # Create prompt for GPT
+    # Construct the GPT prompt
     gpt_prompt = f"""
 You are a travel concierge for a curated app called Attaché. 
 You ONLY interpret user requests into structured filters to search a private database.
@@ -32,33 +33,38 @@ USER REQUEST:
 {user_input}
     """
 
-    # Call OpenAI
-    response = openai.ChatCompletion.create(
-        model="gpt-4",
-        messages=[{"role": "user", "content": gpt_prompt}],
-        temperature=0.3
-    )
-
     try:
-        parsed = json.loads(response["choices"][0]["message"]["content"])
-    except json.JSONDecodeError:
-        return jsonify({"error": "Failed to parse GPT output"}), 500
+        # Call GPT to interpret the prompt
+        response = openai.ChatCompletion.create(
+            model="gpt-4",
+            messages=[{"role": "user", "content": gpt_prompt}],
+            temperature=0.3
+        )
 
-    # Apply filters to dataset
-    filtered = df[
-        df["City"].str.contains(parsed["city"], case=False, na=False)
-    ]
+        # Parse JSON output from GPT
+        content = response["choices"][0]["message"]["content"]
+        filters = json.loads(content)
 
-    if "category" in parsed:
-        filtered = filtered[filtered["Category"].isin(parsed["category"])]
+        # Filter the dataset
+        results = df.copy()
 
-    if "tags" in parsed and parsed["tags"]:
-        tag_mask = filtered["Tags"].apply(lambda x: any(tag in str(x) for tag in parsed["tags"]))
-        filtered = filtered[tag_mask]
+        if "city" in filters:
+            results = results[results["City"].str.contains(filters["city"], case=False, na=False)]
 
-    results = filtered.to_dict(orient="records")
+        if "category" in filters and isinstance(filters["category"], list):
+            results = results[results["Category"].isin(filters["category"])]
 
-    return jsonify({"results": results})
+        if "tags" in filters and filters["tags"]:
+            results = results[results["Tags"].apply(
+                lambda x: any(tag.lower() in str(x).lower() for tag in filters["tags"])
+            )]
 
+        return jsonify({"results": results.to_dict(orient="records")})
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+# Run only if not being imported
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=81)
+    app.run(host="0.0.0.0", port=5000)
