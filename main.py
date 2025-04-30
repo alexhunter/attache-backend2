@@ -59,6 +59,8 @@ USER REQUEST:
         if "tags" in filters and filters["tags"]:
             results = results[results["Tags"].apply(
                 lambda x: any(tag.lower() in str(x).lower() for tag in filters["tags"])
+        if results.empty and "tags" in filters:
+            results = df[df["City"].str.contains(filters["city"], case=False, na=False)]
             )]
 
         return jsonify({"results": results.to_dict(orient="records")})
