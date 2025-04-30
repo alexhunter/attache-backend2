@@ -16,6 +16,8 @@ client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 # Load dataset once on startup
 CSV_PATH = "attache_cleaned_places.csv"
 df = pd.read_csv(CSV_PATH)
+print("----- DISTINCT CITIES IN CSV -----", flush=True)
+print(df["City"].dropna().unique(), flush=True)
 
 @app.route("/query", methods=["POST"])
 def query():
