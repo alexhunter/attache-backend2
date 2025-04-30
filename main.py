@@ -4,6 +4,7 @@ import pandas as pd
 import openai
 import os
 import json
+import traceback  # ✅ Move this import to the top level
 
 # Set up the app
 app = Flask(__name__)
@@ -78,12 +79,10 @@ USER REQUEST:
 
         return jsonify({"results": results.to_dict(orient="records")})
 
-        import traceback
-
-        except Exception as e:
-            print("ERROR during query:")
-            traceback.print_exc()
-            return jsonify({"error": str(e)}), 500
+    except Exception as e:  # ✅ Correctly dedented
+        print("ERROR during query:")
+        traceback.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 # Run only if executed directly
 if __name__ == "__main__":
