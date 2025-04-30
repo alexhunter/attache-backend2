@@ -1,5 +1,5 @@
-from flask_cors import CORS
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import pandas as pd
 import openai
 import os
@@ -9,7 +9,7 @@ import json
 app = Flask(__name__)
 CORS(app)
 
-# Securely pull API key from environment
+# Securely load OpenAI key from environment
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Load your dataset once at startup
@@ -20,55 +20,61 @@ df = pd.read_csv(CSV_PATH)
 def query():
     user_input = request.json.get("prompt", "")
 
-    # Construct the GPT prompt
+    # Build prompt for OpenAI
     gpt_prompt = f"""
-You are a travel concierge for a curated app called Attaché. 
+You are a travel concierge for a curated app called Attaché.
 You ONLY interpret user requests into structured filters to search a private database.
-Return valid JSON with:
-- city
-- category (e.g. Food, Drink, Stay, See, Tip)
-- tags (e.g. Romantic, Trendy, Coffee)
-- duration_hours
-- preferences
+Return valid JSON with the following fields only:
+- city: string
+- category: list of strings (e.g., Food, Drink, Stay, See, Tip)
+- tags: list of strings (e.g., Romantic, Trendy, Coffee)
+- duration_hours: number (optional)
+- preferences: string (optional)
 
 USER REQUEST:
 {user_input}
     """
 
     try:
-        # Call GPT to interpret the prompt
+        # Call OpenAI to interpret the user prompt
         response = openai.ChatCompletion.create(
             model="gpt-4",
             messages=[{"role": "user", "content": gpt_prompt}],
             temperature=0.3
         )
 
-        # Parse JSON output from GPT
         content = response["choices"][0]["message"]["content"]
         filters = json.loads(content)
 
-        # Filter the dataset
+        # Start filtering
         results = df.copy()
 
+        # City
         if "city" in filters:
             results = results[results["City"].str.contains(filters["city"], case=False, na=False)]
 
+        # Category
         if "category" in filters and isinstance(filters["category"], list):
             results = results[results["Category"].isin(filters["category"])]
 
+        # Tags
         if "tags" in filters and filters["tags"]:
-            results = results[results["Tags"].apply(
+            tag_mask = results["Tags"].apply(
                 lambda x: any(tag.lower() in str(x).lower() for tag in filters["tags"])
-        if results.empty and "tags" in filters:
-            results = df[df["City"].str.contains(filters["city"], case=False, na=False)]
-            )]
+            )
+            tag_filtered = results[tag_mask]
 
+            # Fallback: if tag filter returns nothing, drop it
+            if not tag_filtered.empty:
+                results = tag_filtered
+
+        # Return results
         return jsonify({"results": results.to_dict(orient="records")})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
-# Run only if not being imported
+# Only runs when executed directly
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
