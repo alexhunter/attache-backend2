@@ -4,7 +4,7 @@ import openai
 import json
 
 # Config
-openai.api_key = "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"
+openai.api_key = "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"
 CSV_PATH = "attache_cleaned_places.csv"
 
 # Load data
