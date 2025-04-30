@@ -10,19 +10,18 @@ import traceback
 app = Flask(__name__)
 CORS(app)
 
-# Create OpenAI client using environment key
+# Create OpenAI client
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Load your dataset once at startup
+# Load dataset once on startup
 CSV_PATH = "attache_cleaned_places.csv"
 df = pd.read_csv(CSV_PATH)
 
 @app.route("/query", methods=["POST"])
 def query():
     user_input = request.json.get("prompt", "")
-    print(f"Received query: {user_input}")
+    print(f"🟢 Received query: {user_input}", flush=True)
 
-    # Build prompt for OpenAI
     gpt_prompt = f"""
 You are a travel concierge for a curated app called Attaché.
 You ONLY interpret user requests into structured filters to search a private database.
@@ -38,7 +37,6 @@ USER REQUEST:
     """
 
     try:
-        # Call OpenAI (v1.x syntax)
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[{"role": "user", "content": gpt_prompt}],
@@ -48,23 +46,22 @@ USER REQUEST:
         content = response.choices[0].message.content
         filters = json.loads(content)
 
-        # Log filters to console
         print("----- GPT FILTERS -----", flush=True)
         print(json.dumps(filters, indent=2), flush=True)
-        print(f"Returning {len(results)} results after filtering.", flush=True)
+        print(f"----- CSV TOTAL ROWS: {len(df)} -----", flush=True)
 
-        # Start filtering
+        # Always start with full dataset
         results = df.copy()
 
-        # Filter by city
+        # City filter
         if "city" in filters:
             results = results[results["City"].str.contains(filters["city"], case=False, na=False)]
 
-        # Filter by category
+        # Category filter
         if "category" in filters and isinstance(filters["category"], list):
             results = results[results["Category"].isin(filters["category"])]
 
-        # Filter by tags (with fallback)
+        # Tag filter (optional fallback)
         if "tags" in filters and filters["tags"]:
             tag_mask = results["Tags"].apply(
                 lambda x: any(tag.lower() in str(x).lower() for tag in filters["tags"])
@@ -72,15 +69,21 @@ USER REQUEST:
             tag_filtered = results[tag_mask]
             if not tag_filtered.empty:
                 results = tag_filtered
+            else:
+                print("No tag matches — falling back to city/category only", flush=True)
 
-        print(f"Returning {len(results)} results after filtering.")
+        if results.empty:
+            print("No matches found — fallback to city-only results", flush=True)
+            results = df[df["City"].str.contains(filters["city"], case=False, na=False)]
+
+        print(f"✅ Returning {len(results)} results after filtering.", flush=True)
         return jsonify({"results": results.to_dict(orient="records")})
 
     except Exception as e:
-        print("ERROR during query:")
+        print("❌ ERROR during query:", flush=True)
         traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
-# Run only if executed directly
+# Run the app locally if needed
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
