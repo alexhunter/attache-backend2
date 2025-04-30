@@ -45,11 +45,12 @@ USER REQUEST:
 
         content = response["choices"][0]["message"]["content"]
         filters = json.loads(content)
-        
+
+        # Logging to Render console
         print("----- GPT FILTERS -----")
-print(json.dumps(filters, indent=2))
-print("----- CSV TOTAL ROWS -----")
-print(f"{len(df)} total rows before filtering")
+        print(json.dumps(filters, indent=2))
+        print("----- CSV TOTAL ROWS -----")
+        print(f"{len(df)} total rows before filtering")
 
         # Start filtering
         results = df.copy()
@@ -62,24 +63,25 @@ print(f"{len(df)} total rows before filtering")
         if "category" in filters and isinstance(filters["category"], list):
             results = results[results["Category"].isin(filters["category"])]
 
-        # Tags
+        # Tags (with fallback)
         if "tags" in filters and filters["tags"]:
             tag_mask = results["Tags"].apply(
                 lambda x: any(tag.lower() in str(x).lower() for tag in filters["tags"])
             )
             tag_filtered = results[tag_mask]
 
-            # Fallback: if tag filter returns nothing, drop it
             if not tag_filtered.empty:
-                results = tag_filtered
-print(f"Returning {len(results)} results after filtering.")
-        # Return results
+                results = tag_filtered  # Only apply if it yields something
+
+        # Log final result count
+        print(f"Returning {len(results)} results after filtering.")
+
         return jsonify({"results": results.to_dict(orient="records")})
 
     except Exception as e:
+        print(f"ERROR: {str(e)}")
         return jsonify({"error": str(e)}), 500
 
-
-# Only runs when executed directly
+# Run only if executed directly
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
