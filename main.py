@@ -64,8 +64,19 @@ def normalise(text):
 
 # === Filtering Helpers with Debug Output ===
 def matches_filters(row, filters):
-    tags = [normalise(t).strip() for t in str(row.get("Tags", "")).split(",")]
-    types = [normalise(t).strip() for t in str(row.get("Type", "")).split(",")]
+    import ast
+raw_tags = row.get("Tags", "")
+try:
+    tag_list = ast.literal_eval(raw_tags) if isinstance(raw_tags, str) and raw_tags.startswith("[") else []
+except:
+    tag_list = []
+tags = [normalise(t).strip() for t in tag_list]
+    raw_types = row.get("Type", "")
+try:
+    type_list = ast.literal_eval(raw_types) if isinstance(raw_types, str) and raw_types.startswith("[") else []
+except:
+    type_list = []
+types = [normalise(t).strip() for t in type_list]
     match = False
 
     print(f"🔍 Checking: {row.get('Name')} | Tags: {tags} | Types: {types}", flush=True)
