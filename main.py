@@ -13,7 +13,7 @@ CORS(app)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Airtable config
-AIRTABLE_TOKEN = "patN5jERLpjTUFHIZ.0d874d925f1de2fba537d816a7de5a93dc320e2d33a205342a393522d8da2901"
+AIRTABLE_TOKEN = os.getenv("AIRTABLE_TOKEN")
 BASE_ID = "app5AeI5uilErzEbw"
 TABLE_NAME = "Places"
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
