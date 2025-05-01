@@ -61,17 +61,24 @@ def load_airtable_data():
     return pd.DataFrame([r["fields"] for r in records])
 
 # === Filtering Helpers ===
+
+def normalise(text):
+    return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii").lower().strip()
+
 def matches_filters(row, filters):
-    tags = str(row.get("Tags", "")).lower().split(", ")
-    types = str(row.get("Type", "")).lower().split(", ")
+    
+    tags = [normalise(t) for t in str(row.get("Tags", "")).split(",")]
+    types = [normalise(t) for t in str(row.get("Type", "")).split(",")]
     match = False
 
     if "tags" in filters and filters["tags"]:
-        tag_match = any(tag.lower() in tags for tag in filters["tags"])
+        filter_tags = [normalise(t) for t in filters.get("tags", [])]
+    tag_match = any(tag in tags for tag in filter_tags)
         match |= tag_match
 
     if "type" in filters and filters["type"]:
-        type_match = any(t.lower() in types for t in filters["type"])
+        filter_types = [normalise(t) for t in filters.get("type", [])]
+    type_match = any(t in types for t in filter_types)
         match |= type_match
 
     return match
