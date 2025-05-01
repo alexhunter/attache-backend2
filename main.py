@@ -136,7 +136,7 @@ USER REQUEST:
 
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
-        sanitised = results.fillna(value=None)
+        sanitised = results.where(pd.notnull(results), None)
         return jsonify({"results": sanitised.to_dict(orient="records")})
 
     except Exception as e:
