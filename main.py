@@ -134,10 +134,18 @@ USER REQUEST:
             else:
                 print("No tag/type matches — fallback to city/category only", flush=True)
 
+        import numpy as np
+
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
-        sanitised = results.where(pd.notnull(results), None)
-        return jsonify({"results": sanitised.to_dict(orient="records")})
+        # Step 1: Replace all NaNs with None
+        sanitised = results.replace({np.nan: None})
+
+        # Step 2: Force conversion to JSON-safe values
+        cleaned = json.loads(json.dumps(sanitised.to_dict(orient="records")))
+
+        # Step 3: Return JSON-safe payload
+        return jsonify({"results": cleaned})
 
     except Exception as e:
         import traceback
