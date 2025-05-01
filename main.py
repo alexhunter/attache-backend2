@@ -66,6 +66,9 @@ def normalise(text):
 def matches_filters(row, filters):
     tags = [normalise(t) for t in str(row.get("Tags", "")).split(",")]
     types = [normalise(t) for t in str(row.get("Type", "")).split(",")]
+
+    print(f"🔍 Checking: {row.get('Name')} | Tags: {tags} | Types: {types}", flush=True)
+    
     match = False
 
     if "tags" in filters and filters["tags"]:
