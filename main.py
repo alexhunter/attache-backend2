@@ -6,15 +6,17 @@ import openai
 import os
 import json
 import requests
+import numpy as np
+import unicodedata
 
 # === Setup ===
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}})
+CORS(app)
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Airtable config
 AIRTABLE_TOKEN = os.getenv("AIRTABLE_TOKEN")
-BASE_ID = "app0NvSPOVHFrDuM9"
+BASE_ID = "app5AeI5uilErzEbw"
 TABLE_NAME = "Places"
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 HEADERS = {
@@ -31,11 +33,7 @@ CITY_ALIASES = {
     "cdmx": "Mexico City",
     "bcn": "Barcelona",
     "ldn": "London",
-    "berlin": "Berlin",
-    "vienna": "Wien",
-    "tel aviv": "Tel Aviv-Yafo",
-    "lisbon": "Lisboa",
-    "bcn": "Barcelona",
+    "berlin": "Berlin"
 }
 
 # === Airtable Pull ===
@@ -60,25 +58,24 @@ def load_airtable_data():
             break
     return pd.DataFrame([r["fields"] for r in records])
 
-# === Filtering Helpers ===
-
+# === Normalize text for accent-insensitive matching ===
 def normalise(text):
     return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii").lower().strip()
 
+# === Filtering Helpers ===
 def matches_filters(row, filters):
-    
     tags = [normalise(t) for t in str(row.get("Tags", "")).split(",")]
     types = [normalise(t) for t in str(row.get("Type", "")).split(",")]
     match = False
 
     if "tags" in filters and filters["tags"]:
         filter_tags = [normalise(t) for t in filters.get("tags", [])]
-    tag_match = any(tag in tags for tag in filter_tags)
+        tag_match = any(tag in tags for tag in filter_tags)
         match |= tag_match
 
     if "type" in filters and filters["type"]:
         filter_types = [normalise(t) for t in filters.get("type", [])]
-    type_match = any(t in types for t in filter_types)
+        type_match = any(t in types for t in filter_types)
         match |= type_match
 
     return match
@@ -141,17 +138,11 @@ USER REQUEST:
             else:
                 print("No tag/type matches — fallback to city/category only", flush=True)
 
-        import numpy as np
-
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
-        # Step 1: Replace all NaNs with None
+        # Sanitize JSON output
         sanitised = results.replace({np.nan: None})
-
-        # Step 2: Force conversion to JSON-safe values
         cleaned = json.loads(json.dumps(sanitised.to_dict(orient="records")))
-
-        # Step 3: Return JSON-safe payload
         return jsonify({"results": cleaned})
 
     except Exception as e:
