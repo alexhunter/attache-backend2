@@ -35,7 +35,7 @@ def load_airtable_data():
         # Debug: print errors
         if "records" not in data:
             print("❌ Airtable API ERROR:")
-            print(json.dumps(data, indent=2))
+            print("RAW RESPONSE:", response.text)
             raise Exception("Airtable API request failed")
 
         records.extend(data["records"])
