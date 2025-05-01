@@ -31,6 +31,13 @@ def load_airtable_data():
             params["offset"] = offset
         response = requests.get(AIRTABLE_URL, headers=HEADERS, params=params)
         data = response.json()
+
+        # Debug: print errors
+        if "records" not in data:
+            print("❌ Airtable API ERROR:")
+            print(json.dumps(data, indent=2))
+            raise Exception("Airtable API request failed")
+
         records.extend(data["records"])
         offset = data.get("offset")
         if not offset:
