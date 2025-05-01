@@ -64,22 +64,21 @@ def normalise(text):
 
 # === Filtering Helpers with Debug Output ===
 def matches_filters(row, filters):
-    tags = [normalise(t) for t in str(row.get("Tags", "")).split(",")]
-    types = [normalise(t) for t in str(row.get("Type", "")).split(",")]
-
-    print(f"🔍 Checking: {row.get('Name')} | Tags: {tags} | Types: {types}", flush=True)
-    
+    tags = [normalise(t).strip() for t in str(row.get("Tags", "")).split(",")]
+    types = [normalise(t).strip() for t in str(row.get("Type", "")).split(",")]
     match = False
 
+    print(f"🔍 Checking: {row.get('Name')} | Tags: {tags} | Types: {types}", flush=True)
+
     if "tags" in filters and filters["tags"]:
-        filter_tags = [normalise(t) for t in filters.get("tags", [])]
+        filter_tags = [normalise(t).strip() for t in filters.get("tags", [])]
         tag_match = any(tag in tags for tag in filter_tags)
         if tag_match:
             print(f"✅ TAG MATCH: {row.get('Name')} — matched tags: {filter_tags}")
         match |= tag_match
 
     if "type" in filters and filters["type"]:
-        filter_types = [normalise(t) for t in filters.get("type", [])]
+        filter_types = [normalise(t).strip() for t in filters.get("type", [])]
         type_match = any(t in types for t in filter_types)
         if type_match:
             print(f"✅ TYPE MATCH: {row.get('Name')} — matched types: {filter_types}")
