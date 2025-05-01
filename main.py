@@ -16,7 +16,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Airtable config
 AIRTABLE_TOKEN = os.getenv("AIRTABLE_TOKEN")
-BASE_ID = "app5AeI5uilErzEbw"
+BASE_ID = "app0NvSPOVHFrDuM9"
 TABLE_NAME = "Places"
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 HEADERS = {
