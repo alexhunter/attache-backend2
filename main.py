@@ -16,7 +16,7 @@ openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Airtable config
 AIRTABLE_TOKEN = os.getenv("AIRTABLE_TOKEN")
-BASE_ID = "app0NvSPOVHFrDuM9"
+BASE_ID = "app5AeI5uilErzEbw"
 TABLE_NAME = "Places"
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 HEADERS = {
@@ -62,7 +62,7 @@ def load_airtable_data():
 def normalise(text):
     return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii").lower().strip()
 
-# === Filtering Helpers ===
+# === Filtering Helpers with Debug Output ===
 def matches_filters(row, filters):
     tags = [normalise(t) for t in str(row.get("Tags", "")).split(",")]
     types = [normalise(t) for t in str(row.get("Type", "")).split(",")]
@@ -71,11 +71,15 @@ def matches_filters(row, filters):
     if "tags" in filters and filters["tags"]:
         filter_tags = [normalise(t) for t in filters.get("tags", [])]
         tag_match = any(tag in tags for tag in filter_tags)
+        if tag_match:
+            print(f"✅ TAG MATCH: {row.get('Name')} — matched tags: {filter_tags}")
         match |= tag_match
 
     if "type" in filters and filters["type"]:
         filter_types = [normalise(t) for t in filters.get("type", [])]
         type_match = any(t in types for t in filter_types)
+        if type_match:
+            print(f"✅ TYPE MATCH: {row.get('Name')} — matched types: {filter_types}")
         match |= type_match
 
     return match
