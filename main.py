@@ -9,16 +9,33 @@ import requests
 
 # === Setup ===
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "*"}})
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
 # Airtable config
 AIRTABLE_TOKEN = os.getenv("AIRTABLE_TOKEN")
-BASE_ID = "app0NvSPOVHFrDuM9"
+BASE_ID = "app5AeI5uilErzEbw"
 TABLE_NAME = "Places"
 AIRTABLE_URL = f"https://api.airtable.com/v0/{BASE_ID}/{TABLE_NAME}"
 HEADERS = {
-    "Authorization": f"Bearer {AIRTABLE_TOKEN}"
+    "Authorization": f"Bearer {AIRTABLE_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# City aliases map
+CITY_ALIASES = {
+    "nyc": "New York",
+    "la": "Los Angeles",
+    "sf": "San Francisco",
+    "nola": "New Orleans",
+    "cdmx": "Mexico City",
+    "bcn": "Barcelona",
+    "ldn": "London",
+    "berlin": "Berlin",
+    "vienna": "Wien",
+    "tel aviv": "Tel Aviv-Yafo",
+    "lisbon": "Lisboa",
+    "bcn": "Barcelona",
 }
 
 # === Airtable Pull ===
@@ -32,7 +49,6 @@ def load_airtable_data():
         response = requests.get(AIRTABLE_URL, headers=HEADERS, params=params)
         data = response.json()
 
-        # Debug: print errors
         if "records" not in data:
             print("❌ Airtable API ERROR:")
             print("RAW RESPONSE:", response.text)
@@ -92,6 +108,10 @@ USER REQUEST:
         print("🟢 Received query:", user_input, flush=True)
         print("----- GPT FILTERS -----")
         print(json.dumps(filters, indent=2), flush=True)
+
+        # Apply city alias if needed
+        city = filters.get("city", "").lower()
+        filters["city"] = CITY_ALIASES.get(city, filters.get("city"))
 
         df = load_airtable_data()
         print("----- Airtable rows:", len(df), "-----", flush=True)
