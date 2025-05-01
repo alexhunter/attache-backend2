@@ -8,6 +8,7 @@ import json
 import requests
 import numpy as np
 import unicodedata
+import ast
 
 # === Setup ===
 app = Flask(__name__)
@@ -62,25 +63,25 @@ def load_airtable_data():
 def normalise(text):
     return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii").lower().strip()
 
-# === Filtering Helpers with Debug Output ===
+# === Filtering Helpers with Safe Parsing and Debug Output ===
 def matches_filters(row, filters):
-    import ast
-raw_tags = row.get("Tags", "")
-try:
-    tag_list = ast.literal_eval(raw_tags) if isinstance(raw_tags, str) and raw_tags.startswith("[") else []
-except:
-    tag_list = []
-tags = [normalise(t).strip() for t in tag_list]
-    raw_types = row.get("Type", "")
-try:
-    type_list = ast.literal_eval(raw_types) if isinstance(raw_types, str) and raw_types.startswith("[") else []
-except:
-    type_list = []
-types = [normalise(t).strip() for t in type_list]
-    match = False
+    try:
+        raw_tags = row.get("Tags", "")
+        tag_list = ast.literal_eval(raw_tags) if isinstance(raw_tags, str) and raw_tags.startswith("[") else []
+    except:
+        tag_list = []
+    tags = [normalise(t).strip() for t in tag_list]
+
+    try:
+        raw_types = row.get("Type", "")
+        type_list = ast.literal_eval(raw_types) if isinstance(raw_types, str) and raw_types.startswith("[") else []
+    except:
+        type_list = []
+    types = [normalise(t).strip() for t in type_list]
 
     print(f"🔍 Checking: {row.get('Name')} | Tags: {tags} | Types: {types}", flush=True)
 
+    match = False
     if "tags" in filters and filters["tags"]:
         filter_tags = [normalise(t).strip() for t in filters.get("tags", [])]
         tag_match = any(tag in tags for tag in filter_tags)
@@ -152,8 +153,6 @@ USER REQUEST:
             filtered = results[results.apply(lambda row: matches_filters(row, filters), axis=1)]
             if not filtered.empty:
                 results = filtered
-            else:
-                print("No tag/type matches — fallback to city/category only", flush=True)
 
         print(f"✅ Returning {len(results)} results after filtering.", flush=True)
 
