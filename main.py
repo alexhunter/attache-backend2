@@ -114,7 +114,6 @@ def query():
             "type": [normalize_text(x) for x in body.get("type", [])],
         }
 
-        # Alias handling
         if filters["city"] in CITY_ALIASES:
             filters["city"] = CITY_ALIASES[filters["city"]]
 
@@ -137,7 +136,6 @@ def query():
 
         print(f"✅ Returning {len(results)} results after filtering.")
 
-        # Add recommended by reference to each result
         for r in results:
             r["Recommended Reference"] = format_recommender_reference(
                 r.get("Recommended By Name", ""), r.get("Recommended By Link", "")
@@ -147,6 +145,44 @@ def query():
     except Exception as e:
         print(f"❌ ERROR during query: {e}")
         return jsonify({"error": "Internal server error"}), 500
+
+@app.route("/api/places", methods=["GET"])
+def get_places():
+    try:
+        category = normalize_text(request.args.get("category", ""))
+        city = normalize_text(request.args.get("city", ""))
+
+        if city in CITY_ALIASES:
+            city = CITY_ALIASES[city]
+
+        df = load_airtable_data()
+        print(f"🔍 Filtering Airtable for /api/places — Category: {category}, City: {city}")
+
+        filtered = df[
+            df["Category"].apply(lambda c: category in clean_list(c)) &
+            df["City"].apply(lambda c: normalize_text(c) == city)
+        ]
+
+        results = []
+        for _, row in filtered.iterrows():
+            results.append({
+                "name": row.get("Name"),
+                "address": row.get("Formatted Address"),
+                "image": row.get("Image", [None])[0] if isinstance(row.get("Image"), list) else None,
+                "rating": row.get("Rating"),
+                "reviewCount": row.get("Number of Reviews"),
+                "type": row.get("Type"),
+                "price": row.get("Price"),
+                "tags": clean_list(row.get("Tags")),
+                "note": row.get("Attaché Note"),
+                "recommendedBy": row.get("Recommended By Name"),
+                "mapsUrl": row.get("Google Maps URL")
+            })
+
+        return jsonify({"results": results})
+    except Exception as e:
+        print(f"❌ ERROR in /api/places: {e}")
+        return jsonify({"error": "Failed to fetch data"}), 500
 
 @app.route("/")
 def index():
